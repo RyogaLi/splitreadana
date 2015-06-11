@@ -20,11 +20,9 @@ def trackminmax(filename, chromosome):
 	min base and max position on chromosome that was mapped
 	to splitreads.
 	'''
-	track_a1 = []
-	track_a2 = []
-	track_b1 = []
-	track_b2 = []
 
+	max_num = 0
+	min_num = chrLens.get(chromosome)
 	# open the discord file
 	with open(filename, 'rb') as splitreadsFile:
 		reader = csv.reader(splitreadsFile)
@@ -33,27 +31,62 @@ def trackminmax(filename, chromosome):
 		for row in reader:
 			# check where the split read belongs to 
 			if row[12] == chromosome: # split read one
-				# track start/end point of split read one
-				track_a1.append(int(row[13]))
-				track_a2.append(int(row[14]))
-
+				if (int(row[13]) | int(row[14])) > max_num:
+					max_num = max(int(row[13]), int(row[14]))
+				if (int(row[13]) | int(row[14])) < min_num:
+					min_num = min(int(row[13]), int(row[14]))
 			if row[18] == chromosome: # split read two
 			    # track start/end point of split read two
-				track_b1.append(int(row[19]))
-				track_b2.append(int(row[20]))
+				if (int(row[19]) | int(row[20])) > max_num:
+					max_num = max(int(row[19]), int(row[20]))
+				if (int(row[19]) | int(row[20])) < min_num:
+					min_num = min(int(row[19]), int(row[20]))
 
-		min_a = [min(track_a1), min(track_a2)]
-		min_b = [min(track_b1), min(track_a1)]
+		#print chromosome, " min: ", min_a, min_b, " max: ", max_a, max_b
+		results = [chromosome, min_num, max_num]
+		print results
+		return results
 
-		max_a = [max(track_a1), max(track_a2)]
-		max_b = [max(track_b1), max(track_a1)]
 
-	# 	print chromosome, " min: ", min_a, min_b, " max: ", max_a, max_b
-		print chromosome, " min: ", min(min_a+min_b), " max: ", max(max_a+max_b)
+# build lists with zero and ones for each split read match
+# merge them into one list
+def build_list(filename, results):
+	min_value = results[1]
+	max_value = results[2]
+	
+	with open(filename, 'rb') as splitreadsFile:
+		reader = csv.reader(splitreadsFile)
+		r=[]
+		for row in reader:
+			if row[12] == results[0]:
+				start = int(row[13])
+				end = int(row[14])
+				distance = abs(start - end)
+				a1 = [0]*(min(start,end)-min_value)
+				b1 = [1]*distance
+				c1 = [0]*(max_value-max(start,end))
+				buildOne = a1 + b1 + c1
+				r.append(buildOne)
+			if row[18] == results[0]:
+				start = int(row[19])
+				end = int(row[20])
+				distance = abs(start - end)
+				a2 = [0]*(min(start,end)-min_value)
+				b2 = [1]*distance
+				c2 = [0]*(max_value-max(start,end))
+				buildTwo = a2 + b2 + c2
+				r.append(buildTwo)
 
+		m = [0] * (max_value-min_value)
+		# print m
+		i = 0
+		while i < len(r):
+			m = [x + y for x, y in zip(r[i], m)]
+			i+=1
+		# zipped = [x + y for x, y in zip(buildOne, buildTwo)]
+		print m
 
 
 if __name__ == "__main__":
-	trackminmax("discord.csv", "chrI")
-	trackminmax("discord.csv", "chrII")
-	trackminmax("discord.csv", "chrIII")
+	r = trackminmax("discord.csv", "chrII")
+	build_list("discord.csv", r)
