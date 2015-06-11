@@ -1,0 +1,3 @@
+chrI  min:  19869  max:  212161
+chrII  min:  45013  max:  813137
+chrIII  min:  101132  max:  295684
