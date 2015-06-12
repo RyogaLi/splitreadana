@@ -11,6 +11,7 @@ chrLens={"chrI" : 249250621,"chrII" : 243199373,"chrIII" : 198022430,"chrIV" : 1
          "chrXXI" : 48129895,  "chrXXII" : 51304566,"chrXXIII" : 155270560}
 
 # stout to Output.txt
+# contains a dictionary which maps the position and total number of mappings 
 sys.stdout = open('Output.txt', 'w')
 
 def readFile(filename, chromosome):
@@ -33,7 +34,7 @@ def readFile(filename, chromosome):
 				elif s > e:
 					region = range(e,s+1)
 
-				outputList+=region
+				outputList.append(region)
 
 			if row[18] == chromosome:
 				s = int(row[13])
@@ -42,105 +43,66 @@ def readFile(filename, chromosome):
 					region = range(s,e+1)
 				elif s > e:
 					region = range(e,s+1)
-				outputList+=region
+				outputList.append(region)
 
-		print outputList
+		return outputList
 
 
-def findMinMax (inputlist):
+def findMinMax (inputlist, chromosome):
 	"""
-	Take a list of lists and find the min and max value in the sublists
+	Take a list of lists and find the min and max value in the whole lists
 	"""
+	max_value = 0
+	min_value = chrLens.get(chromosome)
 
-	
+	for i in inputlist:
+		if i[0] < min_value:
+			min_value = min(i)
 
-# def trackminmax(filename, chromosome):
-# 	'''
-# 	Read a formated csv file with filename and prints the 
-# 	min base and max position on chromosome that was mapped
-# 	to splitreads.
-# 	'''
+		if i[0] > max_value:
+			max_value = max(i)
 
-# 	max_num = 0
-# 	min_num = chrLens.get(chromosome)
-# 	# open the discord file
-# 	with open(filename, 'rb') as splitreadsFile:
-# 		reader = csv.reader(splitreadsFile)
-
-# 		# find the start and end position of split reads
-# 		for row in reader:
-# 			# check where the split read belongs to 
-# 			if row[12] == chromosome: # split read one
-# 				if (int(row[13]) | int(row[14])) > max_num:
-# 					max_num = max(int(row[13]), int(row[14]))
-# 				if (int(row[13]) | int(row[14])) < min_num:
-# 					min_num = min(int(row[13]), int(row[14]))
-# 			if row[18] == chromosome: # split read two
-# 			    # track start/end point of split read two
-# 				if (int(row[19]) | int(row[20])) > max_num:
-# 					max_num = max(int(row[19]), int(row[20]))
-# 				if (int(row[19]) | int(row[20])) < min_num:
-# 					min_num = min(int(row[19]), int(row[20]))
-
-# 		#print chromosome, " min: ", min_a, min_b, " max: ", max_a, max_b
-# 		results = [chromosome, min_num, max_num]
-# 		print results
-# 		return results
+	results = [chromosome,min_value,max_value]
+	return results
 
 
-# # build lists with zero and ones for each split read match
-# # merge them into one list
-# def build_list(filename, results):
-# 	min_value = results[1]
-# 	max_value = results[2]
-	
-# 	with open(filename, 'rb') as splitreadsFile:
-# 		reader = csv.reader(splitreadsFile)
-# 		r=[]
-# 		for row in reader:
-# 			if row[12] == results[0]:
-# 				start = int(row[13])
-# 				end = int(row[14])
-# 				distance = abs(start - end) + 1
-# 				a1 = [0]*(min(start,end)-min_value)
-# 				b1 = [1]*distance
-# 				c1 = [0]*(max_value-max(start,end))
-# 				buildOne = a1 + b1 + c1
-# 				r.append(buildOne)
-# 			if row[18] == results[0]:
-# 				start = int(row[19])
-# 				end = int(row[20])
-# 				distance = abs(start - end) + 1
-# 				a2 = [0]*(min(start,end)-min_value)
-# 				b2 = [1]*distance
-# 				c2 = [0]*(max_value-max(start,end))
-# 				buildTwo = a2 + b2 + c2
-# 				r.append(buildTwo)
+def buildLists(inputlist, infolist):
+	"""
+	Build a new list for each list in inputlist. Use 0 and 1 to indicate the mapped region
+	infolist contains chromosome name and min&max position
+	"""
+	chrName = infolist[0]
+	min_value = infolist[1]
+	max_value = infolist[2]
+	builtlist = []
+	for i in inputlist:
+		region = range(min_value,max_value+1)
+		k = [0]*(i[0]-min_value)
+		n = [1]*(len(i))
+		m = [0]*(max_value-i[-1])
+		built = k + n + m
+		builtlist.append(built)
 
-# 		#print len(r[0])
-# 		m = [0] * (max_value-min_value+1)
-# 		#print len(m)
-# 		#print m[768050]
-# 		i = 0
-# 		while i < len(r):
-# 			m = [x + y for x, y in zip(r[i], m)]
-# 			i+=1
-# 		# print m
-# 		print len(m)
-# 		dic = {}
-# 		count = 0
-# 		for j in range(min_value,max_value+1):
-# 			for k in m:
-# 				dic[j] = m[j]
-# 		print dic
-# 			# k += 1
-# 			# if k > 10:
-# 			# 	break
+	return builtlist
 
-# 		# zipped = [x + y for x, y in zip(buildOne, buildTwo)]
+
+def AssociatePos(inputlist, infolist):
+	"""
+	Merge the lists in inputlist, build a dictionary to map them with position
+	"""
+	region = range(infolist[1],infolist[2]+1)
+	merge = [0]*(infolist[2]-infolist[1]+1)
+	for i in inputlist:
+		merge = [x + y for x, y in zip(i, merge)]
+	dictionary = dict(zip(region, merge))
+
+	print dictionary
 
 
 if __name__ == "__main__":
-	readFile("discord.csv", "chrV")
+	outputList = readFile("discord.csv", "chrV")
+	infolist = findMinMax(outputList, "chrV")
+	build = buildLists(outputList, infolist)
+	AssociatePos(build, infolist)
 	# r = trackminmax("discord.csv", "chrII")
 	# build_list("discord.csv", r)
